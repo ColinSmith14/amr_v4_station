@@ -1,0 +1,36 @@
+running egg_info
+creating ../../build/amr_v4_station/amr_v4_station.egg-info
+writing ../../build/amr_v4_station/amr_v4_station.egg-info/PKG-INFO
+writing dependency_links to ../../build/amr_v4_station/amr_v4_station.egg-info/dependency_links.txt
+writing entry points to ../../build/amr_v4_station/amr_v4_station.egg-info/entry_points.txt
+writing requirements to ../../build/amr_v4_station/amr_v4_station.egg-info/requires.txt
+writing top-level names to ../../build/amr_v4_station/amr_v4_station.egg-info/top_level.txt
+writing manifest file '../../build/amr_v4_station/amr_v4_station.egg-info/SOURCES.txt'
+reading manifest file '../../build/amr_v4_station/amr_v4_station.egg-info/SOURCES.txt'
+writing manifest file '../../build/amr_v4_station/amr_v4_station.egg-info/SOURCES.txt'
+running build
+running build_py
+creating /home/colin/amr_v4_station/build/amr_v4_station/build
+creating /home/colin/amr_v4_station/build/amr_v4_station/build/lib
+creating /home/colin/amr_v4_station/build/amr_v4_station/build/lib/amr_v4_station
+copying src/__init__.py -> /home/colin/amr_v4_station/build/amr_v4_station/build/lib/amr_v4_station
+copying src/station.py -> /home/colin/amr_v4_station/build/amr_v4_station/build/lib/amr_v4_station
+running install
+running install_lib
+creating /home/colin/amr_v4_station/install/amr_v4_station/lib/python3.10/site-packages/amr_v4_station
+copying /home/colin/amr_v4_station/build/amr_v4_station/build/lib/amr_v4_station/__init__.py -> /home/colin/amr_v4_station/install/amr_v4_station/lib/python3.10/site-packages/amr_v4_station
+copying /home/colin/amr_v4_station/build/amr_v4_station/build/lib/amr_v4_station/station.py -> /home/colin/amr_v4_station/install/amr_v4_station/lib/python3.10/site-packages/amr_v4_station
+byte-compiling /home/colin/amr_v4_station/install/amr_v4_station/lib/python3.10/site-packages/amr_v4_station/__init__.py to __init__.cpython-310.pyc
+byte-compiling /home/colin/amr_v4_station/install/amr_v4_station/lib/python3.10/site-packages/amr_v4_station/station.py to station.cpython-310.pyc
+running install_data
+creating /home/colin/amr_v4_station/install/amr_v4_station/share/ament_index
+creating /home/colin/amr_v4_station/install/amr_v4_station/share/ament_index/resource_index
+creating /home/colin/amr_v4_station/install/amr_v4_station/share/ament_index/resource_index/packages
+copying resource/amr_v4_station -> /home/colin/amr_v4_station/install/amr_v4_station/share/ament_index/resource_index/packages
+creating /home/colin/amr_v4_station/install/amr_v4_station/share/amr_v4_station/launch
+copying launch/launch.station.py -> /home/colin/amr_v4_station/install/amr_v4_station/share/amr_v4_station/launch
+running install_egg_info
+Copying ../../build/amr_v4_station/amr_v4_station.egg-info to /home/colin/amr_v4_station/install/amr_v4_station/lib/python3.10/site-packages/amr_v4_station-0.0.0-py3.10.egg-info
+running install_scripts
+Installing station script to /home/colin/amr_v4_station/install/amr_v4_station/lib/amr_v4_station
+writing list of installed files to '/home/colin/amr_v4_station/build/amr_v4_station/install.log'
