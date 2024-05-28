@@ -3,6 +3,7 @@
 import rclpy
 import rclpy.executors
 import sys
+import time
 from std_msgs.msg import Bool
 import RPi.GPIO as gpio
 import pyodbc
@@ -46,7 +47,6 @@ class Station:
     def checkSensors(self):
         self.sensor1 = gpio.input(sensor1Pin)
         self.sensor2 = gpio.input(sensor2Pin)
-        print("S1: " + str(self.sensor1) + " S2: " + str(self.sensor2))
         self.inPlace = self.sensor1 and self.sensor2
     
     def sendStationStatus(self):
@@ -69,6 +69,7 @@ class Station:
                 
                 if self.inPlace:
                     self.light.changeColor(True, True)
+                    print('tote in place')
                 else:
                     self.light.changeColor(True, False)
                     print('tote moved')
@@ -82,6 +83,7 @@ class Light:
         self.r = False
         self.g = False
         self.b = False
+        self.count = 0
         
     def changeColor(self, s1, s2):
         if s1 and s2:
@@ -89,9 +91,14 @@ class Light:
             self.g = False
             self.b = True
         elif (s1 and not s2) or (not s1 and s2):
-            self.r = True
+            if(self.count %2 == 0):
+                self.r = True
+            else:
+                self.r = False
             self.g = False
             self.b = False
+            self.count += 1
+
         elif not s1 and not s2:
             self.r = False
             self.g = True
@@ -100,6 +107,7 @@ class Light:
         gpio.output(light1Pin, self.r)
         gpio.output(light2Pin, self.g)
         gpio.output(light3Pin, self.b)
+        time.sleep(1)
 
 def main(args=None):
     rclpy.init(args=args)
