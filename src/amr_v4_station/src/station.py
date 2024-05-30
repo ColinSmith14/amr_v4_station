@@ -4,112 +4,172 @@ import rclpy
 import rclpy.executors
 import sys
 import time
+import logging
+import json
 from std_msgs.msg import Bool
 import RPi.GPIO as gpio
 import pyodbc
 
-sensor1Pin = 11
-sensor2Pin = 13
-light1Pin = 16
-light2Pin = 18
-light3Pin = 22
+# setup logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
-class Station:
-    def __init__(self, name):
-        self.name = name
-        self.sensor1 = False
-        self.sensor2 = False
-        self.light = Light()
-        self.inPlace = False
-        self.stationClear = True
-        self.stationNode = rclpy.create_node('station_node')
-        self.stationPublisher = self.stationNode.create_publisher(Bool, 'station209A/stationStatus', 10)
-        
-        self.cnxn = pyodbc.connect('DRIVER={ODBC Driver 18 for SQL Server};SERVER=fisher-agc.database.windows.net;DATABASE=Fisher_AGC;UID=fisher_agc;PWD=tTp##L86?qM!4iG7')
-        self.cursor = self.cnxn.cursor()
-
-        gpio.setwarnings(False)
-        gpio.setmode(gpio.BOARD)
-        gpio.setup(sensor1Pin, gpio.IN, pull_up_down=gpio.PUD_DOWN)
-        gpio.setup(sensor2Pin, gpio.IN, pull_up_down=gpio.PUD_DOWN)
-        gpio.setup(light1Pin, gpio.OUT)
-        gpio.setup(light2Pin, gpio.OUT)
-        gpio.setup(light3Pin, gpio.OUT)
-
-        
-    def fetchStationClearFromDatabase(self):
-        self.cursor.execute("SELECT cart_in_place FROM Station WHERE station_name = ?", self.name)
-        result = self.cursor.fetchone()
-        if result:
-            self.stationClear = result[0]
-
+with open('config.json', 'r') as config_file:
+    config = json.load(config_file)
     
-    def checkSensors(self):
-        self.sensor1 = gpio.input(sensor1Pin)
-        self.sensor2 = gpio.input(sensor2Pin)
-        self.inPlace = self.sensor1 and self.sensor2
-    
-    def sendStationStatus(self):
-        self.cursor.execute("UPDATE Station SET cart_in_place = ? WHERE station_name = ?", (1 if self.inPlace else 0, self.name))
-        self.cnxn.commit()
-    
-    def run(self):
-        while rclpy.ok():
-            self.light.changeColor(False, False)
-            self.checkSensors()
-            
-            if self.inPlace:
-                self.stationClear = False
-                self.sendStationStatus()
-                print('tote in place')
+class Database:
+    def __init__(self, config):
+        self.config = config
+        self.con = None
+        self.cursor = None
         
-            while not self.stationClear:
-                self.checkSensors()
-                self.fetchStationClearFromDatabase()
-                
-                if self.inPlace:
-                    self.light.changeColor(True, True)
-                    print('tote in place')
-                else:
-                    self.light.changeColor(True, False)
-                    print('tote moved')
-                    
-            self.sendStationStatus()
-            self.fetchStationClearFromDatabase()
-            print('station cleared')
-            
-class Light:
-    def __init__(self):
+    def connect(self):
+        try:
+            self.connection = pyodbc.connect(
+                'DRIVER={};SERVER={};DATABASE={};UID={};PWD={}'.format(
+                    self.config['driver'],
+                    self.config['server'],
+                    self.config['database'],
+                    self.config['username'],
+                    self.config['password']
+                )
+            )
+            self.cursor = self.connection.cursor()
+            logger.info("Database connection established.")
+        except pyodbc.Error as e:
+            logger.error(f"Database connection error: {e}")
+            sys.exit(1)
+    
+    def disconnect(self):
+        self.connection.close()
+        logger.info("Database connection closed.")
+
+class LightStack:
+    def __init__(self, config):
         self.r = False
         self.g = False
         self.b = False
         self.count = 0
+        self.config = config
+        gpio.setup(self.config['light1'], gpio.OUT)
+        gpio.setup(self.config['light2'], gpio.OUT)
+        gpio.setup(self.config['light3'], gpio.OUT)
         
-    def changeColor(self, s1, s2):
-        if s1 and s2:
-            self.r = False
-            self.g = False
-            self.b = True
-        elif (s1 and not s2) or (not s1 and s2):
-            if(self.count %2 == 0):
-                self.r = True
+        
+    
+    def change_color(self, s1, s2, docking):
+        tote = s1 and s2
+        if(docking):
+            if(tote):
+                self.r = False
+                self.g = False
+                self.b = True
+            else:
+                if(self.count % 2 == 0):
+                    self.r = True
+                    self.g = False
+                    self.b = False
+                else:
+                    self.r = False
+                    self.g = False
+                    self.b = False
+        else:
+            if(tote):
+                self.r = False
+                self.g = False
+                self.b = True
             else:
                 self.r = False
-            self.g = False
-            self.b = False
-            self.count += 1
-
-        elif not s1 and not s2:
-            self.r = False
-            self.g = True
-            self.b = False
+                self.g = True
+                self.b = False
+        try:
+            gpio.output(self.config['light1'], self.r)
+            gpio.output(self.config['light2'], self.g)
+            gpio.output(self.config['light3'], self.b)
         
-        gpio.output(light1Pin, self.r)
-        gpio.output(light2Pin, self.g)
-        gpio.output(light3Pin, self.b)
-        time.sleep(1)
+        except Exception as e:
+            logger.error(f"Error changing light color: {e}")
+            
 
-def main(args=None):
+class Sensor:
+    def __init__(self, pin):
+        self.pin = pin
+        gpio.setup(self.pin, gpio.IN, pull_up_down=gpio.PUD_DOWN)
+    
+    def read(self):
+        
+        try:
+            return gpio.input(self.pin)
+        
+        except Exception as e:
+            logger.error(f"Error reading sensor: {e}")
+            return None
+
+class Station:
+    def __init__(self, name, config):
+        self.name = name
+        self.config = config
+        self.timer = 0
+        self.light_stack = LightStack(self.config['gpio_pins'])
+        self.sensor1 = Sensor(self.config['gpio_pins']['sensor1'])
+        self.sensor2 = Sensor(self.config['gpio_pins']['sensor2'])
+        self.cart_in_place = False
+        self.docking = False
+        self.database = Database(self.config['database'])
+        self.database.connect()
+        self.node = rclpy.create_node('station_' + self.name + '_node')
+        self.publisher = self.node.create_publisher(Bool, 'station_' + self.name + '_publisher', 10)
+        gpio.setmode(gpio.BOARD)
+    
+    def check_sensors(self):
+        try:
+            if(self.sensor1.read() and self.sensor2.read()):
+                time.sleep(1)
+                if(self.sensor1.read() and self.sensor2.read()):
+                    return True
+            return False
+        except Exception as e:
+            logger.error(f"Error checking sensors: {e}")
+            return None
+    
+    def fetch_docking_status(self):
+        try:
+            self.database.cursor.execute("SELECT docking_in_action FROM stations WHERE name = ?", self.name)
+            self.docking = self.database.cursor.fetchone()[0]
+        except pyodbc.Error as e:
+            logger.error(f"Error fetching docking status: {e}")
+    
+    def update_cart_status(self):
+        try:
+            self.database.cursor.execute("UPDATE stations SET cart_in_station = ? WHERE name = ?", self.cart_in_place, self.name)
+            self.database.connection.commit()
+        except pyodbc.Error as e:
+            logger.error(f"Error updating cart status: {e}")
+        
+    def run(self):
+        while(rclpy.ok()):
+            self.fetch_docking_status()
+            self.cart_in_place = self.check_sensors()
+            self.update_cart_status()
+            
+            if(self.docking):
+                self.timer = 0
+                if(self.cart_in_place):
+                    self.light_stack.change_color(True, True, self.docking)
+                else:
+                    self.light_stack.change_color(False, False, self.docking)
+            else:
+                if(self.cart_in_place):
+                    self.timer = 0
+                    self.light_stack.change_color(True, True, self.docking)
+                else:
+                    self.light_stack.change_color(False, False, self.docking)
+                    self.timer += 1
+                    if(self.timer == 10): # change to 60 in final version
+                        self.light_stack.change_color(False, False, self.docking)
+                        self.timer = 0
+
+def main(args = None):
     rclpy.init(args=args)
     
     if len(sys.argv) < 2:
@@ -117,11 +177,9 @@ def main(args=None):
         sys.exit(1)
     
     station_name = sys.argv[1]
-    
-    print('station name: ' + station_name)
-    station = Station(station_name)
-    station.run()
-    rclpy.shutdown()
-
-if __name__ == '__main__':
-    main()
+    station = Station(station_name, config)
+    executor = rclpy.executors.MultiThreadedExecutor()
+    executor.add_node(station.node)
+    executor.spin(station.run())
+    station.database.disconnect()
+    gpio.cleanup()

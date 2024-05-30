@@ -1,0 +1,16 @@
+{
+    "database": {
+        "driver": "{ODBC Driver 18 for SQL Server}",
+        "server": "fisher-agc.database.windows.net",
+        "database": "fisher-AGC",
+        "user": "fisher_agc",
+        "password": "tTp##L86?qM!4iG7"
+    },
+    "gpio_pins": {
+        "sensor1": 11,
+        "sensor2": 13,
+        "light1": 16,
+        "light2": 18,
+        "light3": 22
+    }
+}
