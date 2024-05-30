@@ -1,0 +1,5 @@
+  File "/home/colin/amr_v4_station/install/amr_v4_station/lib/python3.10/site-packages/amr_v4_station/station.py", line 172
+    logging.log("docking status: " + (str)self.docking + " cart status: " + (str)self.cart_in_place)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+SyntaxError: invalid syntax. Perhaps you forgot a comma?
+

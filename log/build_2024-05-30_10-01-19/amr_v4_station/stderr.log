@@ -1,0 +1,5 @@
+  File "/home/colin/amr_v4_station/install/amr_v4_station/lib/python3.10/site-packages/amr_v4_station/station.py", line 29
+    'DRIVER={'{}'};SERVER={};DATABASE={};UID={};PWD={}'.format(
+    ^^^^^^^^^^^^
+SyntaxError: invalid syntax. Perhaps you forgot a comma?
+

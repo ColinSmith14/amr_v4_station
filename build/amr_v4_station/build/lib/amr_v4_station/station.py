@@ -14,13 +14,13 @@ import pyodbc
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-with open('config.json', 'r') as config_file:
+with open('src/amr_v4_station/src/config.json', 'r') as config_file:
     config = json.load(config_file)
     
 class Database:
     def __init__(self, config):
         self.config = config
-        self.con = None
+        self.connection = None
         self.cursor = None
         
     def connect(self):
@@ -49,6 +49,7 @@ class LightStack:
         self.r = False
         self.g = False
         self.b = False
+        self.timer = 0
         self.count = 0
         self.config = config
         gpio.setup(self.config['light1'], gpio.OUT)
@@ -57,13 +58,12 @@ class LightStack:
         
         
     
-    def change_color(self, s1, s2, docking):
-        tote = s1 and s2
-        if(docking):
-            if(tote):
+    def change_color(self, cart, docking, timer):
+        if(not cart and not docking):
+            if(timer == 0):
                 self.r = False
-                self.g = False
-                self.b = True
+                self.g = True
+                self.b = False
             else:
                 if(self.count % 2 == 0):
                     self.r = True
@@ -73,15 +73,23 @@ class LightStack:
                     self.r = False
                     self.g = False
                     self.b = False
-        else:
-            if(tote):
-                self.r = False
+        if(not cart and docking):
+            if(self.count % 2 == 0):
+                self.r = True
                 self.g = False
-                self.b = True
+                self.b = False
             else:
                 self.r = False
-                self.g = True
+                self.g = False
                 self.b = False
+        if(cart):
+            self.r = False
+            self.g = False
+            self.b = True
+
+        
+
+
         try:
             gpio.output(self.config['light1'], self.r)
             gpio.output(self.config['light2'], self.g)
@@ -109,7 +117,9 @@ class Station:
     def __init__(self, name, config):
         self.name = name
         self.config = config
-        self.timer = 0
+        gpio.setmode(gpio.BOARD)
+        self.max_time = 10
+        self.timer = self.max_time
         self.light_stack = LightStack(self.config['gpio_pins'])
         self.sensor1 = Sensor(self.config['gpio_pins']['sensor1'])
         self.sensor2 = Sensor(self.config['gpio_pins']['sensor2'])
@@ -117,9 +127,8 @@ class Station:
         self.docking = False
         self.database = Database(self.config['database'])
         self.database.connect()
-        self.node = rclpy.create_node('station_' + self.name + '_node')
-        self.publisher = self.node.create_publisher(Bool, 'station_' + self.name + '_publisher', 10)
-        gpio.setmode(gpio.BOARD)
+        self.node = rclpy.create_node('station')
+        self.publisher = self.node.create_publisher(Bool, 'station' + self.name + 'publisher', 10)
     
     def check_sensors(self):
         try:
@@ -134,52 +143,45 @@ class Station:
     
     def fetch_docking_status(self):
         try:
-            self.database.cursor.execute("SELECT docking_in_action FROM stations WHERE name = ?", self.name)
-            self.docking = self.database.cursor.fetchone()[0]
+            self.database.cursor.execute("SELECT docking_in_action FROM Station WHERE station_name = ?", self.name)
+            self.docking = self.database.cursor.fetchone()
         except pyodbc.Error as e:
             logger.error(f"Error fetching docking status: {e}")
+            time.sleep(5)
     
     def update_cart_status(self):
         try:
-            self.database.cursor.execute("UPDATE stations SET cart_in_station = ? WHERE name = ?", self.cart_in_place, self.name)
+            self.database.cursor.execute("UPDATE Station SET cart_in_place = ? WHERE station_name = ?", self.cart_in_place, self.name)
             self.database.connection.commit()
         except pyodbc.Error as e:
             logger.error(f"Error updating cart status: {e}")
-        
+            sys.exit()   
+
     def run(self):
         while(rclpy.ok()):
             self.fetch_docking_status()
             self.cart_in_place = self.check_sensors()
             self.update_cart_status()
-            
-            if(self.docking):
-                self.timer = 0
-                if(self.cart_in_place):
-                    self.light_stack.change_color(True, True, self.docking)
-                else:
-                    self.light_stack.change_color(False, False, self.docking)
-            else:
-                if(self.cart_in_place):
-                    self.timer = 0
-                    self.light_stack.change_color(True, True, self.docking)
-                else:
-                    self.light_stack.change_color(False, False, self.docking)
+            self.light_stack.change_color(self.cart_in_place, self.docking, self.timer)
+            if(self.timer ==  self.max_time and not self.cart_in_place):
+                self.timer == 0
+            if(not self.docking and not self.cart_in_place):
+                if(self.timer < self.max_time):
                     self.timer += 1
-                    if(self.timer == 10): # change to 60 in final version
-                        self.light_stack.change_color(False, False, self.docking)
-                        self.timer = 0
+                    time.sleep(1)
+
+
+            logging.info("docking status: {} cart status: {}".format(self.docking, self.cart_in_place) )
 
 def main(args = None):
     rclpy.init(args=args)
     
-    if len(sys.argv) < 2:
-        print("Usage: station.py <station_name>")
-        sys.exit(1)
-    
-    station_name = sys.argv[1]
+    station_name = sys.argv[0]
+    logging.info(station_name)
     station = Station(station_name, config)
     executor = rclpy.executors.MultiThreadedExecutor()
     executor.add_node(station.node)
     executor.spin(station.run())
     station.database.disconnect()
     gpio.cleanup()
+    executor.shutdown()
