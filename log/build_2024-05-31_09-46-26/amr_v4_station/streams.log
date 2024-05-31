@@ -1,0 +1,24 @@
+[2.836s] Invoking command in '/home/colin/amr_v4_station/src/amr_v4_station': PYTHONPATH=/home/colin/amr_v4_station/build/amr_v4_station/prefix_override:/home/colin/amr_v4_station/install/amr_v4_station/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated setup.py egg_info --egg-base ../../build/amr_v4_station build --build-base /home/colin/amr_v4_station/build/amr_v4_station/build install --record /home/colin/amr_v4_station/build/amr_v4_station/install.log --single-version-externally-managed install_data
+[3.957s] running egg_info
+[3.960s] writing ../../build/amr_v4_station/amr_v4_station.egg-info/PKG-INFO
+[3.963s] writing dependency_links to ../../build/amr_v4_station/amr_v4_station.egg-info/dependency_links.txt
+[3.965s] writing entry points to ../../build/amr_v4_station/amr_v4_station.egg-info/entry_points.txt
+[3.965s] writing requirements to ../../build/amr_v4_station/amr_v4_station.egg-info/requires.txt
+[3.968s] writing top-level names to ../../build/amr_v4_station/amr_v4_station.egg-info/top_level.txt
+[3.975s] reading manifest file '../../build/amr_v4_station/amr_v4_station.egg-info/SOURCES.txt'
+[3.978s] writing manifest file '../../build/amr_v4_station/amr_v4_station.egg-info/SOURCES.txt'
+[3.979s] running build
+[3.979s] running build_py
+[3.980s] copying src/station.py -> /home/colin/amr_v4_station/build/amr_v4_station/build/lib/amr_v4_station
+[3.982s] running install
+[3.983s] running install_lib
+[3.986s] copying /home/colin/amr_v4_station/build/amr_v4_station/build/lib/amr_v4_station/station.py -> /home/colin/amr_v4_station/install/amr_v4_station/lib/python3.10/site-packages/amr_v4_station
+[3.989s] byte-compiling /home/colin/amr_v4_station/install/amr_v4_station/lib/python3.10/site-packages/amr_v4_station/station.py to station.cpython-310.pyc
+[3.996s] running install_data
+[3.996s] running install_egg_info
+[4.003s] removing '/home/colin/amr_v4_station/install/amr_v4_station/lib/python3.10/site-packages/amr_v4_station-0.0.0-py3.10.egg-info' (and everything under it)
+[4.005s] Copying ../../build/amr_v4_station/amr_v4_station.egg-info to /home/colin/amr_v4_station/install/amr_v4_station/lib/python3.10/site-packages/amr_v4_station-0.0.0-py3.10.egg-info
+[4.011s] running install_scripts
+[4.101s] Installing station script to /home/colin/amr_v4_station/install/amr_v4_station/lib/amr_v4_station
+[4.102s] writing list of installed files to '/home/colin/amr_v4_station/build/amr_v4_station/install.log'
+[4.232s] Invoked command in '/home/colin/amr_v4_station/src/amr_v4_station' returned '0': PYTHONPATH=/home/colin/amr_v4_station/build/amr_v4_station/prefix_override:/home/colin/amr_v4_station/install/amr_v4_station/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated setup.py egg_info --egg-base ../../build/amr_v4_station build --build-base /home/colin/amr_v4_station/build/amr_v4_station/build install --record /home/colin/amr_v4_station/build/amr_v4_station/install.log --single-version-externally-managed install_data
