@@ -124,7 +124,7 @@ class Station:
         self.database = Database(self.config['database'])
         self.database.connect()
         self.node = rclpy.create_node('station')
-        self.publisher = self.node.create_publisher(Bool, 'station' + self.name + 'publisher', 10)
+        self.publisher = None
 
     def check_sensors(self):
         try:
@@ -166,11 +166,35 @@ class Station:
     def reset_timer(self):
         self.flash_red_timer = self.timer_duration
 
+    def manage_publisher(self):
+        msg = Bool()
+        if(self.cart_in_place):
+            if(self.publisher is None):
+                self.publisher = self.node.create_publisher(Bool, 'station_' + self.name + '_status', 10)
+                logger.info("station publisher created")
+            msg.data = True
+            try:
+                self.publisher.publish(msg)
+            except Exception as e:
+                logger.info("error in publisher: {e}")
+        elif(not self.cart_in_place and not self.docking and self.publisher is not None):
+            self.publisher.destroy()
+            self.publisher = None
+            logger.info("station publisher destroyed")
+        elif(self.publisher is not None and not self.cart_in_place):
+            msg.data = False
+            try:
+                self.publisher.publish(msg)
+            except Exception as e:
+                logger.info("error in publisher: {e}")
+
+
     def run(self):
         while rclpy.ok():
             self.fetch_docking_status()
             self.cart_in_place = self.check_sensors()
             self.update_cart_status()
+            self.manage_publisher()
             if(not self.cart_in_place and not self.docking):
                 if(self.flash_red_timer > 0):
                     self.flash_red = True
